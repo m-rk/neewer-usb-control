@@ -9,7 +9,9 @@ The USB serial protocol was reverse-engineered from the proprietary NEEWER Contr
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 <p align="center">
-  <img src="screenshot.png" width="280" alt="Neewer USB Control menubar panel">
+  <img src="screenshot-on.png" width="280" alt="Light on">
+  <img src="screenshot-off.png" width="280" alt="Light off">
+  <img src="screenshot-settings.png" width="280" alt="Settings">
 </p>
 
 ## Features
@@ -138,7 +140,7 @@ Contributions are welcome — especially:
 - **Temperature mapping** for models with different CCT ranges
 - **Linux/Windows testing**
 - **UI improvements** to the menubar app
-- **Global keyboard shortcuts** (the Tauri plugin is wired up, UI not yet built)
+- **Global keyboard shortcuts** improvements
 
 ### Development setup
 
@@ -162,7 +164,7 @@ cargo test
 - Power on/off command (tag `0x06`) is decoded from the app binary but doesn't produce a response on the PL81-Pro. On/off is implemented as brightness 0/100 instead.
 - HSI (RGB) mode exists in the protocol but the PL81-Pro is bi-color only — no RGB LEDs.
 - The temperature slider has 19 discrete steps, matching the hardware. You can't set arbitrary Kelvin values between steps.
-- Global keyboard shortcuts are not yet configurable from the GUI (infrastructure is in place).
+
 
 ## License
 
