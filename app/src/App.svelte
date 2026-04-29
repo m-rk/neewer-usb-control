@@ -36,6 +36,8 @@
   let connected = $state(false);
   let store: Store | null = $state(null);
   let suppressEcho = $state(false);
+  let checkingConnection = false;
+  let reconnectTimer: ReturnType<typeof setInterval> | null = null;
 
   interface Preset {
     name: string;
@@ -171,6 +173,8 @@
       await invoke("set_light", { brightness: bri, kelvin });
     } catch (e) {
       console.error("set_light failed:", e);
+      connected = false;
+      startReconnectLoop();
     }
     setTimeout(() => (suppressEcho = false), 600);
     await saveState();
@@ -234,7 +238,9 @@
     saveShortcutConfig();
   }
 
-  async function checkConnection() {
+  async function checkConnection(): Promise<boolean> {
+    if (checkingConnection) return connected;
+    checkingConnection = true;
     try {
       connected = await invoke("is_connected");
       if (!connected) {
@@ -244,9 +250,30 @@
           connected = true;
         }
       }
+      return connected;
     } catch {
       connected = false;
+      return false;
+    } finally {
+      checkingConnection = false;
     }
+  }
+
+  function stopReconnectLoop() {
+    if (reconnectTimer) clearInterval(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  function startReconnectLoop() {
+    connected = false;
+    if (reconnectTimer) return;
+    reconnectTimer = setInterval(async () => {
+      const reconnected = await checkConnection();
+      if (reconnected) {
+        stopReconnectLoop();
+        await sendLight();
+      }
+    }, 2000);
   }
 
   let sendTimer: ReturnType<typeof setTimeout> | null = null;
@@ -282,14 +309,7 @@
     );
 
     await listen("serial-disconnected", () => {
-      connected = false;
-      const interval = setInterval(async () => {
-        await checkConnection();
-        if (connected) {
-          clearInterval(interval);
-          sendLight();
-        }
-      }, 2000);
+      startReconnectLoop();
     });
 
     const appWindow = getCurrentWebviewWindow();

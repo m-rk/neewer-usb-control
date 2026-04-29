@@ -4,7 +4,7 @@
 /// Emits "light-status" events to the frontend when status packets arrive.
 use std::io::Read;
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicU64, Ordering},
     Arc, Mutex,
 };
 use std::time::Duration;
@@ -21,15 +21,15 @@ pub struct LightStatus {
 }
 
 pub struct SerialManager {
-    port: Mutex<Option<Box<dyn serialport::SerialPort>>>,
-    reading: Arc<AtomicBool>,
+    port: Arc<Mutex<Option<Box<dyn serialport::SerialPort>>>>,
+    generation: Arc<AtomicU64>,
 }
 
 impl SerialManager {
     pub fn new() -> Self {
         Self {
-            port: Mutex::new(None),
-            reading: Arc::new(AtomicBool::new(false)),
+            port: Arc::new(Mutex::new(None)),
+            generation: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -44,8 +44,9 @@ impl SerialManager {
 
     /// Open the serial port and start the read loop.
     pub fn connect(&self, path: &str, app: AppHandle) -> Result<(), String> {
-        // Stop any existing read loop
-        self.reading.store(false, Ordering::Relaxed);
+        // Invalidate any existing read loop before opening a replacement port.
+        let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
+        *self.port.lock().unwrap() = None;
 
         let port = serialport::new(path, 115200)
             .data_bits(serialport::DataBits::Eight)
@@ -63,11 +64,11 @@ impl SerialManager {
         *self.port.lock().unwrap() = Some(port);
 
         // Start background read loop
-        let reading = self.reading.clone();
-        reading.store(true, Ordering::Relaxed);
+        let port_slot = self.port.clone();
+        let current_generation = self.generation.clone();
 
         std::thread::spawn(move || {
-            read_loop(reader, reading, app);
+            read_loop(reader, port_slot, current_generation, generation, app);
         });
 
         Ok(())
@@ -77,9 +78,17 @@ impl SerialManager {
     pub fn write(&self, data: &[u8]) -> Result<(), String> {
         let mut lock = self.port.lock().unwrap();
         let port = lock.as_mut().ok_or("Port not open")?;
-        port.write_all(data).map_err(|e| format!("Write failed: {e}"))?;
-        port.flush().map_err(|e| format!("Flush failed: {e}"))?;
-        Ok(())
+        let result = port
+            .write_all(data)
+            .map_err(|e| format!("Write failed: {e}"))
+            .and_then(|_| port.flush().map_err(|e| format!("Flush failed: {e}")));
+
+        if result.is_err() {
+            *lock = None;
+            self.generation.fetch_add(1, Ordering::SeqCst);
+        }
+
+        result
     }
 
     /// Check if the port is currently open.
@@ -89,7 +98,7 @@ impl SerialManager {
 
     /// Disconnect and stop the read loop.
     pub fn disconnect(&self) {
-        self.reading.store(false, Ordering::Relaxed);
+        self.generation.fetch_add(1, Ordering::SeqCst);
         *self.port.lock().unwrap() = None;
     }
 }
@@ -97,13 +106,15 @@ impl SerialManager {
 /// Background read loop — parses 8-byte status packets and emits events.
 fn read_loop(
     mut port: Box<dyn serialport::SerialPort>,
-    running: Arc<AtomicBool>,
+    port_slot: Arc<Mutex<Option<Box<dyn serialport::SerialPort>>>>,
+    current_generation: Arc<AtomicU64>,
+    generation: u64,
     app: AppHandle,
 ) {
     let mut buf = [0u8; 256];
     let mut accum: Vec<u8> = Vec::new();
 
-    while running.load(Ordering::Relaxed) {
+    while current_generation.load(Ordering::SeqCst) == generation {
         match port.read(&mut buf) {
             Ok(n) if n > 0 => {
                 accum.extend_from_slice(&buf[..n]);
@@ -133,7 +144,18 @@ fn read_loop(
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => continue,
             Err(_) => {
-                let _ = app.emit("serial-disconnected", ());
+                if current_generation
+                    .compare_exchange(
+                        generation,
+                        generation + 1,
+                        Ordering::SeqCst,
+                        Ordering::SeqCst,
+                    )
+                    .is_ok()
+                {
+                    *port_slot.lock().unwrap() = None;
+                    let _ = app.emit("serial-disconnected", ());
+                }
                 break;
             }
             _ => continue,
