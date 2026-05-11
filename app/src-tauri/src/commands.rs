@@ -3,6 +3,7 @@ use tauri::State;
 
 use crate::protocol;
 use crate::serial::SerialManager;
+use crate::tray_icon;
 
 #[tauri::command]
 pub fn quit_app(app: tauri::AppHandle) {
@@ -20,7 +21,11 @@ pub fn list_ports() -> Vec<String> {
 }
 
 #[tauri::command]
-pub fn connect(path: String, app: tauri::AppHandle, state: State<'_, SerialManager>) -> Result<(), String> {
+pub fn connect(
+    path: String,
+    app: tauri::AppHandle,
+    state: State<'_, SerialManager>,
+) -> Result<(), String> {
     state.connect(&path, app)
 }
 
@@ -35,7 +40,20 @@ pub fn is_connected(state: State<'_, SerialManager>) -> bool {
 }
 
 #[tauri::command]
-pub fn set_light(brightness: u8, kelvin: u32, state: State<'_, SerialManager>) -> Result<(), String> {
+pub fn set_light(
+    brightness: u8,
+    kelvin: u32,
+    state: State<'_, SerialManager>,
+) -> Result<(), String> {
     let cmd = protocol::cct_command(brightness, kelvin);
     state.write(&cmd)
+}
+
+#[tauri::command]
+pub fn set_tray_icon_state(
+    connected: bool,
+    is_on: bool,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    tray_icon::set_state(&app, connected, is_on)
 }

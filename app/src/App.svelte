@@ -38,6 +38,8 @@
   let suppressEcho = $state(false);
   let checkingConnection = false;
   let reconnectTimer: ReturnType<typeof setInterval> | null = null;
+  let lastTrayIconState = "";
+  let hasKnownLightState = false;
 
   interface Preset {
     name: string;
@@ -165,8 +167,26 @@
   let glowSpread = $derived(Math.round(20 + hwBrightness * 60));
   let glowOpacity = $derived(hwBrightness * 0.8);
 
+  async function updateTrayIcon() {
+    const trayIsOn = hasKnownLightState || connected ? isOn : false;
+    const stateKey = `${connected}:${trayIsOn}`;
+    if (lastTrayIconState === stateKey) return;
+    lastTrayIconState = stateKey;
+
+    try {
+      await invoke("set_tray_icon_state", { connected, isOn: trayIsOn });
+    } catch (e) {
+      lastTrayIconState = "";
+      console.error("set_tray_icon_state failed:", e);
+    }
+  }
+
   async function sendLight() {
-    if (!connected) return;
+    void updateTrayIcon();
+    if (!connected) {
+      await saveState();
+      return;
+    }
     const bri = isOn ? sliderToHw(brightness) : 0;
     suppressEcho = true;
     try {
@@ -174,6 +194,7 @@
     } catch (e) {
       console.error("set_light failed:", e);
       connected = false;
+      void updateTrayIcon();
       startReconnectLoop();
     }
     setTimeout(() => (suppressEcho = false), 600);
@@ -193,7 +214,9 @@
     store = await load("settings.json", { autoSave: false });
     brightness = ((await store.get("brightness")) as number) ?? 100;
     kelvin = ((await store.get("kelvin")) as number) ?? 4950;
-    isOn = ((await store.get("isOn")) as boolean) ?? true;
+    const savedIsOn = await store.get("isOn");
+    hasKnownLightState = typeof savedIsOn === "boolean";
+    isOn = hasKnownLightState ? savedIsOn : true;
     presets = ((await store.get("presets")) as Preset[]) ?? [];
     const savedShortcuts = (await store.get("shortcutConfig")) as ShortcutConfig | null;
     if (savedShortcuts) shortcutConfig = savedShortcuts;
@@ -208,6 +231,7 @@
       isOn = true;
       brightness = lastOnBrightness;
     }
+    hasKnownLightState = true;
     sendLight();
   }
 
@@ -215,6 +239,7 @@
     brightness = p.brightness;
     kelvin = p.kelvin;
     isOn = true;
+    hasKnownLightState = true;
     sendLight();
   }
 
@@ -240,6 +265,7 @@
 
   async function checkConnection(): Promise<boolean> {
     if (checkingConnection) return connected;
+    const wasConnected = connected;
     checkingConnection = true;
     try {
       connected = await invoke("is_connected");
@@ -256,6 +282,7 @@
       return false;
     } finally {
       checkingConnection = false;
+      if (connected !== wasConnected) void updateTrayIcon();
     }
   }
 
@@ -266,6 +293,7 @@
 
   function startReconnectLoop() {
     connected = false;
+    void updateTrayIcon();
     if (reconnectTimer) return;
     reconnectTimer = setInterval(async () => {
       const reconnected = await checkConnection();
@@ -286,6 +314,7 @@
     if (!isOn) {
       isOn = true;
     }
+    hasKnownLightState = true;
     throttledSend();
   }
 
@@ -293,6 +322,7 @@
     await loadState();
     await registerShortcuts();
     await checkConnection();
+    await updateTrayIcon();
 
     if (connected) sendLight();
 
@@ -303,7 +333,9 @@
         brightness = hwToSlider(event.payload.brightness);
         kelvin = event.payload.kelvin;
         isOn = event.payload.brightness > 0;
+        hasKnownLightState = true;
         if (brightness > 0) lastOnBrightness = brightness;
+        void updateTrayIcon();
         saveState();
       }
     );

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+        <!-- macOS rounded square ("squircle") clip -->
+        <clipPath id="squircle">
+          <path d="M512,32
+                   C 232,32  32,232  32,512
+                   C 32,792  232,992 512,992
+                   C 792,992 992,792 992,512
+                   C 992,232 792,32  512,32 Z"></path>
+        </clipPath>
+
+        <!-- warm backdrop -->
+        <radialGradient id="bgGrad" cx="50%" cy="38%" r="70%">
+          <stop offset="0%" stop-color="#fff4d8"></stop>
+          <stop offset="38%" stop-color="#ffd784"></stop>
+          <stop offset="78%" stop-color="#e07a2a"></stop>
+          <stop offset="100%" stop-color="#7d2a0d"></stop>
+        </radialGradient>
+
+        <!-- soft glow halo behind panel -->
+        <radialGradient id="halo" cx="50%" cy="46%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"></stop>
+          <stop offset="55%" stop-color="#ffffff" stop-opacity="0.18"></stop>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"></stop>
+        </radialGradient>
+
+        <!-- glowing panel face -->
+        <linearGradient id="panelGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"></stop>
+          <stop offset="55%" stop-color="#fff6df"></stop>
+          <stop offset="100%" stop-color="#ffd07a"></stop>
+        </linearGradient>
+
+        <!-- thin inner bezel -->
+        <linearGradient id="bezel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3a2a1c"></stop>
+          <stop offset="60%" stop-color="#1d140c"></stop>
+          <stop offset="100%" stop-color="#000000"></stop>
+        </linearGradient>
+
+        <!-- top sheen on background -->
+        <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"></stop>
+          <stop offset="40%" stop-color="#ffffff" stop-opacity="0"></stop>
+        </linearGradient>
+
+        <!-- ray gradient -->
+        <linearGradient id="rayGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"></stop>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"></stop>
+        </linearGradient>
+      </defs>
+
+      <g clip-path="url(#squircle)">
+        <!-- background -->
+        <rect x="0" y="0" width="1024" height="1024" fill="url(#bgGrad)"></rect>
+        <!-- top sheen for material feel -->
+        <rect x="0" y="0" width="1024" height="520" fill="url(#sheen)"></rect>
+
+        <!-- glow halo behind panel -->
+        <circle cx="512" cy="440" r="420" fill="url(#halo)"></circle>
+
+        <!-- emanating rays - cardinals (N, E, W). South omitted; stand is there. -->
+        <g transform="translate(512 440)" fill="url(#rayGrad)">
+          <!-- top (panel top y=-200, gap 30) -->
+          <path d="M -42 -230 L 42 -230 L 22 -340 L -22 -340 Z"></path>
+          <!-- right (panel right x=250, gap 30) -->
+          <path d="M 280 -42 L 280 42 L 390 22 L 390 -22 Z"></path>
+          <!-- left -->
+          <path d="M -280 -42 L -280 42 L -390 22 L -390 -22 Z"></path>
+        </g>
+
+        <!-- diagonal rays NE / NW / SE / SW (fainter) -->
+        <g transform="translate(512 440)" fill="url(#rayGrad)" opacity="0.62">
+          <g transform="rotate(45)">
+            <path d="M -30 -320 L 30 -320 L 14 -420 L -14 -420 Z"></path>
+            <path d="M -30  320 L 30  320 L 14  420 L -14  420 Z"></path>
+            <path d="M 320 -30 L 320 30 L 420 14 L 420 -14 Z"></path>
+            <path d="M -320 -30 L -320 30 L -420 14 L -420 -14 Z"></path>
+          </g>
+        </g>
+
+        <!-- stand: stem + base (sits behind the panel so the panel overlaps the joint) -->
+        <g transform="translate(512 440)">
+          <!-- shadow under base -->
+          <ellipse cx="0" cy="352" rx="244" ry="22" fill="#000" opacity="0.28"></ellipse>
+          <!-- stem -->
+          <rect x="-28" y="190" width="56" height="112" fill="url(#bezel)"></rect>
+          <!-- base bar -->
+          <rect x="-220" y="298" width="440" height="48" rx="22" fill="url(#bezel)"></rect>
+          <!-- base highlight -->
+          <rect x="-214" y="300" width="428" height="10" rx="5" fill="#ffffff" opacity="0.18"></rect>
+        </g>
+
+        <!-- the softbox panel: outer bezel + inner glowing face -->
+        <g transform="translate(512 440)">
+          <!-- drop shadow -->
+          <rect x="-238" y="-198" width="476" height="416" rx="62" fill="#000" opacity="0.32" transform="translate(0 24)"></rect>
+
+          <!-- bezel (5:4, matches tray 10x8 panel) -->
+          <rect x="-250" y="-200" width="500" height="400" rx="68" fill="url(#bezel)"></rect>
+          <!-- inner panel face -->
+          <rect x="-220" y="-170" width="440" height="340" rx="44" fill="url(#panelGrad)"></rect>
+          <!-- panel inner highlight -->
+          <rect x="-208" y="-158" width="416" height="158" rx="36" fill="#ffffff" opacity="0.35"></rect>
+          <!-- subtle softbox cross -->
+          <g stroke="#ffffff" stroke-opacity="0.35" stroke-width="2" fill="none">
+            <line x1="-220" y1="0" x2="220" y2="0"></line>
+            <line x1="0" y1="-170" x2="0" y2="170"></line>
+          </g>
+          <!-- inner rim line -->
+          <rect x="-220" y="-170" width="440" height="340" rx="44" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="3"></rect>
+        </g>
+
+        <!-- bottom inner shadow for depth -->
+        <rect x="0" y="820" width="1024" height="204" fill="#000" opacity="0.22"></rect>
+      </g>
+
+      <!-- outer 1px squircle stroke for crispness -->
+      <path d="M512,32
+               C 232,32  32,232  32,512
+               C 32,792  232,992 512,992
+               C 792,992 992,792 992,512
+               C 992,232 792,32  512,32 Z" fill="none" stroke="#000" stroke-opacity="0.18" stroke-width="2"></path>
+</svg>

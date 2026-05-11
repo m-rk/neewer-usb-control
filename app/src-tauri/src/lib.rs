@@ -1,6 +1,7 @@
 mod commands;
 mod protocol;
 mod serial;
+mod tray_icon;
 
 use serial::SerialManager;
 use tauri::{
@@ -21,16 +22,15 @@ pub fn run() {
             commands::disconnect,
             commands::is_connected,
             commands::set_light,
+            commands::set_tray_icon_state,
             commands::quit_app,
         ])
         .setup(|app| {
             // Build tray icon — click toggles the panel window
-            let tray_icon = {
-                let bytes = include_bytes!("../icons/tray-icon.png");
-                tauri::image::Image::from_bytes(bytes).expect("invalid tray icon")
-            };
-            TrayIconBuilder::new()
-                .icon(tray_icon)
+            let initial_tray_icon =
+                tray_icon::image_for_state(false, false).expect("invalid tray icon");
+            TrayIconBuilder::with_id(tray_icon::TRAY_ID)
+                .icon(initial_tray_icon)
                 .icon_as_template(true)
                 .tooltip("Neewer USB Control")
                 .on_tray_icon_event(|tray, event| {
@@ -48,8 +48,8 @@ pub fn run() {
                                 let _ = win.hide();
                             } else {
                                 use tauri_plugin_positioner::WindowExt;
-                                let _ = win
-                                    .move_window(tauri_plugin_positioner::Position::TrayCenter);
+                                let _ =
+                                    win.move_window(tauri_plugin_positioner::Position::TrayCenter);
                                 let _ = win.show();
                                 let _ = win.set_focus();
                             }

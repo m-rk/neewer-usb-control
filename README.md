@@ -174,5 +174,5 @@ MIT
 
 - Protocol decoded by disassembling the NEEWER Control Center app binary using `otool`
 - BLE protocol research by the [NeewerLite](https://github.com/keefo/NeewerLite) and [NeewerLite-Python](https://github.com/taburineagle/NeewerLite-Python) communities
-- Icons from [Lucide](https://lucide.dev/) (ISC license)
+- In-app glyphs from [Lucide](https://lucide.dev/) (ISC license)
 - Built with [Tauri](https://tauri.app/), [Svelte](https://svelte.dev/), and [serialport-rs](https://github.com/serialport/serialport-rs)
