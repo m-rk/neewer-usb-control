@@ -52,12 +52,13 @@ function writeSvg(path, svg) {
   writeFileSync(path, `${svg}\n`);
 }
 
-function traySvg(id) {
+function traySvg(id, options = {}) {
   const symbol = extractSymbol(id);
+  const opacityAttr = options.opacity == null ? "" : ` opacity="${options.opacity}"`;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="${symbol.viewBox}">
-  <g transform="translate(0 ${trayYOffset})">
+  <g transform="translate(0 ${trayYOffset})"${opacityAttr}>
     ${symbol.body}
   </g>
 </svg>`;
@@ -73,15 +74,25 @@ function appSvg(id) {
 }
 
 const outputs = [
-  ["tray-conn-on", "app/src-tauri/icons/tray-icon.svg", traySvg],
-  ["tray-conn-off", "app/src-tauri/icons/tray-icon-off.svg", traySvg],
-  ["tray-disc-on", "app/src-tauri/icons/tray-icon-disconnected-on.svg", traySvg],
-  ["tray-disc-off", "app/src-tauri/icons/tray-icon-disconnected-off.svg", traySvg],
-  ["appicon", "app/app-icon.svg", appSvg],
+  { id: "tray-conn-on", path: "app/src-tauri/icons/tray-icon.svg", render: traySvg },
+  { id: "tray-conn-off", path: "app/src-tauri/icons/tray-icon-off.svg", render: traySvg },
+  {
+    id: "tray-conn-on",
+    path: "app/src-tauri/icons/tray-icon-disconnected-on.svg",
+    render: traySvg,
+    options: { opacity: 0.4 },
+  },
+  {
+    id: "tray-conn-off",
+    path: "app/src-tauri/icons/tray-icon-disconnected-off.svg",
+    render: traySvg,
+    options: { opacity: 0.4 },
+  },
+  { id: "appicon", path: "app/app-icon.svg", render: appSvg },
 ];
 
-for (const [id, path, render] of outputs) {
+for (const { id, path, render, options } of outputs) {
   const target = join(root, path);
-  writeSvg(target, render(id));
+  writeSvg(target, render(id, options));
   console.log(`wrote ${path}`);
 }
