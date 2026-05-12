@@ -10,6 +10,7 @@ if (!designPath) {
 }
 
 const root = process.cwd();
+const trayYOffset = 2.5;
 const html = readFileSync(designPath, "utf8");
 const templateMatch = html.match(
   /<script type="__bundler\/template">\s*([\s\S]*?)\s*<\/script>/,
@@ -56,7 +57,9 @@ function traySvg(id) {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="${symbol.viewBox}">
-  ${symbol.body}
+  <g transform="translate(0 ${trayYOffset})">
+    ${symbol.body}
+  </g>
 </svg>`;
 }
 
