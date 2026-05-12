@@ -2,6 +2,10 @@
 
 USB control for Neewer LED panel lights on macOS. Includes a menubar GUI app and a Python CLI.
 
+<p align="center">
+  <img src="app/app-icon.png" width="120" alt="Neewer USB Control app icon">
+</p>
+
 The USB serial protocol was reverse-engineered from the proprietary NEEWER Control Center app binary — this is the first public USB control implementation for any Neewer light. All existing projects use Bluetooth only. See [RESEARCH.md](RESEARCH.md) for the full protocol documentation.
 
 > **Tested on:** Neewer PL81-Pro (model PL81-Pro-1260740) on macOS Sequoia. Other Neewer USB lights likely use the same protocol, but your mileage may vary. Contributions and test reports for other models are welcome.
